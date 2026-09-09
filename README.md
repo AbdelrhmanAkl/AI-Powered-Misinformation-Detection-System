@@ -8,7 +8,7 @@ Use the project information and rules below as the **single source of truth**.
 
 ## Live Demo
 
-[Launch the Streamlit Application](https://ai-misinformation-detection.streamlit.app/)
+[Launch the Streamlit Application](https://ai-powered-misinformation-detection-system-kpwevip8yqegvhzvnrk.streamlit.app/)
 
 ## CRITICAL INSTRUCTIONS
 
