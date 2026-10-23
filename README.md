@@ -104,8 +104,8 @@ flowchart LR
     A[📰 Title + Article Text] --> B[Text combination]
     B --> C[TF-IDF<br/>saved vectorizer]
     C --> D[Calibrated classifier<br/>predict_proba]
-    D --> E[P&#40;fake&#41;]
-    E --> F{P&#40;fake&#41; ≥ 0.36 ?}
+    D --> E["P(fake)"]
+    E --> F{"P(fake) ≥ 0.36 ?"}
     F -- Yes --> G[🚨 Fake News]
     F -- No --> H[✅ Real News]
 ```
@@ -336,9 +336,18 @@ Ideas for future work — **not implemented today**:
 
 ## 👨‍💻 Author
 
-**Abdelrahman Akl** — Machine Learning / NLP
+### **Abdelrahman Akl**
+
+**AI Engineer** · Agentic AI • LLMs • RAG • NLP • Computer Vision • Deep Learning
+
+| | |
+|---|---|
+| 🎓 **Instructor** | AI Instructor @ eYouth |
+| 💼 **Experience** | Agentic AI Intern @ Orange · AI Engineer Intern @ ZAWOLF.AI |
+| 🏅 **Education & Certifications** | NTI AI/ML Graduate · Huawei HCIA-AI Certified |
 
 [![GitHub](https://img.shields.io/badge/GitHub-AbdelrhmanAkl-181717?style=flat-square&logo=github)](https://github.com/AbdelrhmanAkl)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-Abdelrahman%20Akl-0A66C2?style=flat-square&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/abdelrahmanakl/)
 
 ---
 
