@@ -1,581 +1,266 @@
-# AI-Powered Misinformation Detection System
+<div align="center">
 
-An end-to-end **NLP-based Machine Learning system** for binary classification of English news articles as **Real News** or **Fake News**.
+# 🛡️ TruthLens AI
+### AI-Powered Misinformation Detection System
 
-The project demonstrates a production-oriented workflow covering **TF-IDF feature engineering, calibrated classification, probability-based decision making, model packaging, frozen inference configuration, evaluation, and Streamlit deployment**.
+**An end-to-end NLP system that classifies English news articles as _Real_ or _Fake_ — with calibrated probabilities, a frozen production threshold, and a modern Streamlit interface.**
 
-> **Important:** This system is a machine learning classification model, not a fact-checking engine. It does not independently verify claims or determine objective truth.
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Streamlit-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white)](https://ai-powered-misinformation-detection-system-kpwevip8yqegvhzvnrk.streamlit.app/)
+[![Python](https://img.shields.io/badge/Python-3.11-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+[![scikit-learn](https://img.shields.io/badge/scikit--learn-ML-F7931E?style=for-the-badge&logo=scikitlearn&logoColor=white)](https://scikit-learn.org/)
+[![Status](https://img.shields.io/badge/Mode-Inference%20Only-6366F1?style=for-the-badge)](#-production-design)
 
----
+[**🚀 Live Demo**](https://ai-powered-misinformation-detection-system-kpwevip8yqegvhzvnrk.streamlit.app/) ·
+[**📦 Repository**](https://github.com/AbdelrhmanAkl/AI-Powered-Misinformation-Detection-System) ·
+[**⚠️ Limitations**](#-limitations) ·
+[**🛡️ Responsible Use**](#-responsible-use)
 
-## 🚀 Live Demo
-
-**Try the deployed application:**
-
-https://ai-powered-misinformation-detection-system-kpwevip8yqegvhzvnrk.streamlit.app/
-
----
-
-## 📂 GitHub Repository
-
-https://github.com/AbdelrhmanAkl/AI-Powered-Misinformation-Detection-System
+</div>
 
 ---
 
-## 📌 Project Overview
+> [!IMPORTANT]
+> TruthLens AI is a **machine-learning text classifier, not a fact-checking engine**. It recognizes language patterns associated with the labels in its training data. It does **not** verify claims or determine objective truth.
 
-The **AI-Powered Misinformation Detection System** is an English-language NLP classification application designed to identify patterns associated with real and fake news articles based on a labeled news dataset.
+---
 
-The application accepts:
+## 📑 Table of Contents
 
-* **News Title**
-* **News Article Body**
+- [Overview](#-overview)
+- [Highlights](#-highlights)
+- [Application](#-application)
+- [How It Works](#-how-it-works)
+- [Production Design](#-production-design)
+- [Dataset](#-dataset)
+- [Evaluation](#-evaluation)
+- [Getting Started](#-getting-started)
+- [Batch Analysis (CSV)](#-batch-analysis-csv)
+- [Project Structure](#-project-structure)
+- [Tech Stack](#-tech-stack)
+- [Limitations](#-limitations)
+- [Responsible Use](#-responsible-use)
+- [Roadmap](#-roadmap)
+- [Author](#-author)
 
-The saved production inference pipeline then performs:
+---
 
-```text
-User Input
-    ↓
-Text Combination
-    ↓
-TF-IDF Vectorization
-    ↓
-Calibrated Classifier
-    ↓
-Fake News Probability
-    ↓
-Production Threshold
-    ↓
-Real News / Fake News
+## 🔎 Overview
+
+TruthLens AI takes a **news headline** and **article body**, runs them through a saved production pipeline, and returns:
+
+- a **verdict** — Real News or Fake News
+- **probabilities** for both classes
+- the **decision threshold** applied to the fake-news score
+
+The model is trained offline and shipped as **one frozen artifact**. The app only performs inference: nothing is retrained or re-fitted when users submit articles.
+
+| | |
+|---|---|
+| **Task** | Binary text classification (English news) |
+| **Input features** | `title` + `text` |
+| **Excluded features** | `subject`, `date` |
+| **Vectorizer** | TF-IDF (`TfidfVectorizer`) |
+| **Classifier** | `CalibratedClassifierCV` (probability-calibrated linear model) |
+| **Decision rule** | Fake if `P(fake) ≥ 0.36` |
+| **Labels** | `0` = Real News · `1` = Fake News |
+
+---
+
+## ✨ Highlights
+
+- 🎯 **Calibrated probabilities** — verdicts come with real/fake scores, not just a hard label.
+- 🔒 **Frozen inference** — only `vectorizer.transform()` is used; no `fit` / `fit_transform` at runtime.
+- 🎚️ **Stored threshold** — the production threshold (`0.36`) lives inside the model package and is reused consistently.
+- 📦 **Single production artifact** — model, vectorizer, threshold, feature policy, label mapping and metadata travel together.
+- 📂 **Batch mode** — upload a CSV and download predictions for every row.
+- 🧪 **Honest evaluation** — diagnostics are labeled as diagnostics, not as held-out generalization.
+- 🎨 **Modern UI** — dark glassmorphism design, one-click examples, confidence ring and threshold-aware score meter.
+
+---
+
+## 🖥️ Application
+
+The Streamlit app has three tabs:
+
+| Tab | What it does |
+|---|---|
+| **🔍 Analyze** | Paste a headline and article body (or load a built-in real/fake example) and get a verdict, confidence ring, probability breakdown and a score meter showing where the article sits relative to the threshold. |
+| **📂 Batch** | Upload a CSV with `title` and/or `text` columns, run inference on every row, filter results and download a predictions CSV. |
+| **🧠 Model** | Inspect the pipeline, saved configuration, feature policy and package metadata. |
+
+<!-- Add screenshots here -->
+<!--
+<p align="center">
+  <img src="assets/analyze.png" width="85%" alt="Analyze tab"/>
+</p>
+-->
+
+---
+
+## ⚙️ How It Works
+
+```mermaid
+flowchart LR
+    A[📰 Title + Article Text] --> B[Text combination]
+    B --> C[TF-IDF<br/>saved vectorizer]
+    C --> D[Calibrated classifier<br/>predict_proba]
+    D --> E[P&#40;fake&#41;]
+    E --> F{P&#40;fake&#41; ≥ 0.36 ?}
+    F -- Yes --> G[🚨 Fake News]
+    F -- No --> H[✅ Real News]
 ```
 
-The production application uses a **pre-trained and packaged model**. No model retraining takes place during inference.
+1. **Combine** — headline and body are merged into one document.
+2. **Vectorize** — the saved TF-IDF vectorizer converts text into weighted numeric features.
+3. **Score** — the calibrated classifier outputs probabilities for both classes.
+4. **Decide** — the saved threshold turns the fake-news probability into the final label.
 
 ---
 
-## 🎯 Project Objectives
+## 🏭 Production Design
 
-The project was developed to demonstrate practical Machine Learning and NLP engineering principles, including:
-
-* Natural Language Processing with TF-IDF
-* Binary text classification
-* Probability calibration
-* Production model packaging
-* Frozen inference configuration
-* Separation of training and inference
-* Probability-based decision making
-* Model evaluation
-* Streamlit application development
-* Local and cloud deployment
-
----
-
-## ✨ Key Features
-
-### 📰 NLP-Based News Classification
-
-Classifies English news articles into two categories:
-
-| Label | Classification |
-| ----: | -------------- |
-|   `0` | Real News      |
-|   `1` | Fake News      |
-
-The prediction is based on the article:
-
-* `title`
-* `text`
-
----
-
-### 📊 Calibrated Probability Output
-
-The production classifier uses:
-
-```text
-CalibratedClassifierCV
-```
-
-This enables the application to produce a probability estimate for the **Fake News** class.
-
-The probability is then evaluated against the frozen production threshold.
-
----
-
-### 🔒 Frozen Production Inference
-
-The Streamlit application loads the saved production model package containing the trained classifier and fitted vectorizer.
-
-During inference, the application uses:
-
-```python
-vectorizer.transform(...)
-```
-
-It does **not** call:
-
-```python
-vectorizer.fit(...)
-```
-
-or:
-
-```python
-vectorizer.fit_transform(...)
-```
-
-Therefore, submitting new articles through the application does not retrain or modify the vectorizer.
-
----
-
-### 🎚️ Production Decision Threshold
-
-The production decision threshold is:
-
-```text
-0.36
-```
-
-The threshold is stored inside the production model package and is reused consistently during inference.
-
-The application does not recalculate or optimize the threshold when making predictions.
-
----
-
-## 🏗️ System Architecture
-
-```text
-                         User
-                          │
-                          ▼
-                ┌───────────────────┐
-                │   News Title      │
-                │   Article Body    │
-                └─────────┬─────────┘
-                          │
-                          ▼
-                ┌───────────────────┐
-                │   Text Processing │
-                └─────────┬─────────┘
-                          │
-                          ▼
-                ┌───────────────────┐
-                │ TfidfVectorizer   │
-                └─────────┬─────────┘
-                          │
-                          ▼
-              ┌─────────────────────────┐
-              │ CalibratedClassifierCV  │
-              └────────────┬────────────┘
-                           │
-                           ▼
-              ┌─────────────────────────┐
-              │ Fake News Probability   │
-              └────────────┬────────────┘
-                           │
-                           ▼
-              ┌─────────────────────────┐
-              │ Production Threshold    │
-              │        0.36             │
-              └────────────┬────────────┘
-                           │
-                           ▼
-              ┌─────────────────────────┐
-              │ Real News / Fake News   │
-              └─────────────────────────┘
-```
-
----
-
-## 🔄 Production Inference Pipeline
-
-The complete production inference flow is:
-
-```text
-News Title + Article Text
-            ↓
-      Text Processing
-            ↓
-      TF-IDF Vectorization
-            ↓
-    CalibratedClassifierCV
-            ↓
-     Fake News Probability
-            ↓
-   Frozen Threshold = 0.36
-            ↓
-      Final Prediction
-            ↓
-   Real News / Fake News
-```
-
----
-
-## 🧩 Production Feature Policy
-
-The production model intentionally uses only the following features:
-
-| Feature   | Production Usage |
-| --------- | ---------------- |
-| `title`   | ✅ Used           |
-| `text`    | ✅ Used           |
-| `subject` | ❌ Excluded       |
-| `date`    | ❌ Excluded       |
-
-The `subject` field is excluded from the production feature set to maintain consistency with the packaged inference configuration.
-
----
-
-## 🤖 Machine Learning Model
-
-### TF-IDF Vectorization
-
-The system uses:
-
-```text
-TfidfVectorizer
-```
-
-TF-IDF transforms textual information into numerical feature representations that can be processed by the machine learning classifier.
-
-The fitted vectorizer is stored inside the production package and reused during inference.
-
----
-
-### Probability-Calibrated Classification
-
-The production classifier is:
-
-```text
-CalibratedClassifierCV
-```
-
-The classifier provides probability estimates that are used by the production decision rule.
-
-The final classification is determined using the configured Fake News probability threshold:
-
-```text
-Threshold = 0.36
-```
-
----
-
-## 📚 Dataset
-
-The project uses two labeled news datasets:
-
-```text
-data/True.csv
-data/Fake.csv
-```
-
-### Dataset Schema
-
-| Column    | Description                 |
-| --------- | --------------------------- |
-| `title`   | News article title          |
-| `text`    | News article body           |
-| `subject` | Dataset subject information |
-| `date`    | Article date                |
-
-### Dataset Size
-
-| Dataset    |   Articles |
-| ---------- | ---------: |
-| `True.csv` |     21,417 |
-| `Fake.csv` |     23,481 |
-| **Total**  | **44,898** |
-
-For production inference, only:
-
-```text
-title
-text
-```
-
-are used as model features.
-
----
-
-## 📦 Production Model Package
-
-The production model is stored as:
+The production model is stored as a single Joblib package:
 
 ```text
 models/misinformation_model_package.joblib
 ```
 
-The Joblib artifact packages the components required for consistent inference:
-
 ```text
-model
-vectorizer
-threshold
-config
-seed
-model_name
-feature_policy
-label_mapping
-metadata
+model            trained, calibrated classifier
+vectorizer       fitted TF-IDF vectorizer
+threshold        frozen decision threshold (0.36)
+config           training configuration
+seed             random seed
+model_name       human-readable model name
+feature_policy   which fields are used for inference
+label_mapping    class index → label
+metadata         additional package information
 ```
 
-Keeping these components together creates a single production artifact containing both the trained model and the configuration required to reproduce its inference behavior.
+On load, the app **validates** the package (required keys, `predict_proba` / `transform` support, threshold range, feature policy) and fails with a clear message if anything is wrong.
 
-This helps preserve consistency across:
+### Feature policy
 
-* Model inference
-* Feature transformation
-* Decision threshold
-* Feature selection
-* Label mapping
-* Model metadata
-* Application deployment
+| Feature | Used in production |
+|---|:---:|
+| `title` | ✅ |
+| `text` | ✅ |
+| `subject` | ❌ |
+| `date` | ❌ |
 
-The Streamlit application therefore does not need to reconstruct these decisions independently.
+---
+
+## 📚 Dataset
+
+Two labeled English news datasets:
+
+```text
+data/True.csv      →  21,417 articles  (Real)
+data/Fake.csv      →  23,481 articles  (Fake)
+                      ───────────────
+                      44,898 articles total
+```
+
+| Column | Description | Used for inference |
+|---|---|:---:|
+| `title` | Article headline | ✅ |
+| `text` | Article body | ✅ |
+| `subject` | Dataset subject category | ❌ |
+| `date` | Publication date | ❌ |
 
 ---
 
 ## 📈 Evaluation
 
-A **Production Inference Diagnostic** was performed using:
+### Production Inference Diagnostic
 
-* 500 Real News samples
-* 500 Fake News samples
-* 1,000 samples in total
+A diagnostic was run on **1,000 samples** (500 real + 500 fake) drawn from `True.csv` and `Fake.csv`.
 
-The samples were drawn from:
-
-```text
-data/True.csv
-data/Fake.csv
-```
-
-### Diagnostic Results
-
-| Metric    |      Result |
-| --------- | ----------: |
-| Accuracy  |  **99.90%** |
+| Metric | Result |
+|---|---:|
+| Accuracy | **99.90%** |
 | Precision | **100.00%** |
-| Recall    |  **99.80%** |
-| F1 Score  |  **99.90%** |
+| Recall | **99.80%** |
+| F1 Score | **99.90%** |
 
-### Confusion Matrix
+**Confusion matrix**
 
-```text
-                    Predicted
-                  Real      Fake
+|  | Predicted Real | Predicted Fake |
+|---|---:|---:|
+| **Actual Real** | 500 | 0 |
+| **Actual Fake** | 1 | 499 |
 
-Actual Real        500        0
-Actual Fake          1      499
-```
+> [!WARNING]
+> These numbers are a **production inference diagnostic**, **not** an independent held-out test result. The samples come from the same source datasets the model was developed on, so they must **not** be read as an estimate of real-world generalization. Reliable generalization claims require an independent held-out set, external data, and ideally temporal or cross-source validation.
 
----
-
-### ⚠️ Evaluation Interpretation
-
-The results above are explicitly reported as a:
-
-> **Production Inference Diagnostic**
-
-They should **not** be interpreted as final held-out test performance.
-
-The 1,000 samples were sampled from the available `True.csv` and `Fake.csv` datasets. Therefore, the reported:
-
-```text
-99.90% Accuracy
-```
-
-is not presented as an estimate of independent real-world generalization.
-
-A reliable assessment of generalization should use:
-
-* An independent held-out test set
-* External validation data
-* Ideally, temporal or source-based validation
-
----
-
-## 🖥️ Streamlit Application
-
-The interactive application is implemented in:
-
-```text
-app.py
-```
-
-The application allows users to enter:
-
-```text
-News Title
-Article Body
-```
-
-The saved production model package is then loaded to generate the prediction.
-
-### Application Output
-
-The application returns:
-
-* Predicted classification
-* Fake News probability
-* Production decision threshold
-
-### Application Behavior
-
-The Streamlit application:
-
-* Loads the saved production model
-* Loads the fitted TF-IDF vectorizer
-* Uses the frozen production threshold
-* Performs inference only
-* Does not retrain the classifier
-* Does not fit the vectorizer
-* Does not modify the production configuration
-
----
-
-## 🌐 Live Application
-
-The deployed application is available here:
-
-https://ai-powered-misinformation-detection-system-kpwevip8yqegvhzvnrk.streamlit.app/
-
----
-
-## 🧪 Evaluation Script
-
-The saved production package can also be evaluated using:
-
-```text
-evaluate_model.py
-```
-
-Run:
-
-```powershell
-.\.venv\Scripts\python.exe evaluate_model.py
-```
-
-The evaluation script evaluates the existing production model package without retraining it.
-
----
-
-## ⚙️ Installation
-
-### Requirements
-
-The project uses:
-
-```text
-Python 3.11
-```
-
-Dependencies are defined in:
-
-```text
-requirements.txt
-```
-
----
-
-### 1. Clone the Repository
+Re-run the diagnostic on the saved package (no retraining):
 
 ```bash
+python evaluate_model.py
+```
+
+---
+
+## 🚀 Getting Started
+
+**Requirements:** Python 3.11
+
+```bash
+# 1. Clone
 git clone https://github.com/AbdelrhmanAkl/AI-Powered-Misinformation-Detection-System.git
-```
-
----
-
-### 2. Enter the Project Directory
-
-```bash
 cd AI-Powered-Misinformation-Detection-System
-```
 
----
-
-### 3. Create a Virtual Environment
-
-```bash
+# 2. Create a virtual environment
 python -m venv .venv
 ```
 
----
+Activate it:
 
-### 4. Activate the Environment
+```bash
+# macOS / Linux
+source .venv/bin/activate
 
-On Windows PowerShell:
-
-```powershell
+# Windows (PowerShell)
 .\.venv\Scripts\Activate.ps1
 ```
 
-If PowerShell execution policy prevents activation, the virtual environment can still be used directly:
+> If PowerShell blocks activation, call the interpreter directly: `.\.venv\Scripts\python.exe`
 
-```powershell
-.\.venv\Scripts\python.exe
+```bash
+# 3. Install dependencies
+pip install -r requirements.txt
+
+# 4. Run the app
+streamlit run app.py
+
+# 5. (Optional) Evaluate the saved package
+python evaluate_model.py
 ```
+
+The app opens at `http://localhost:8501`.
 
 ---
 
-### 5. Install Dependencies
+## 📂 Batch Analysis (CSV)
 
-```powershell
-.\.venv\Scripts\python.exe -m pip install -r requirements.txt
-```
+Upload a CSV containing at least one of these columns (case-insensitive):
 
----
+| Column | Required | Description |
+|---|:---:|---|
+| `title` | one of the two | Article headline |
+| `text` | one of the two | Article body |
 
-### 6. Run the Streamlit Application
+The app appends these columns to your data:
 
-```powershell
-.\.venv\Scripts\python.exe -m streamlit run app.py
-```
+| Output column | Meaning |
+|---|---|
+| `prediction` | `0` real / `1` fake (empty on error) |
+| `label` | `Real News`, `Fake News` or `Inference Error` |
+| `real_probability` | Probability of the real class |
+| `fake_probability` | Probability of the fake class |
+| `confidence` | Probability of the predicted class |
 
----
-
-### 7. Run the Evaluation
-
-```powershell
-.\.venv\Scripts\python.exe evaluate_model.py
-```
-
----
-
-## 🧑‍💻 Usage
-
-### Local Application
-
-Start Streamlit:
-
-```powershell
-.\.venv\Scripts\python.exe -m streamlit run app.py
-```
-
-Then provide:
-
-```text
-News Title
-Article Body
-```
-
-The application loads the production model package and performs inference.
-
-The result includes:
-
-```text
-Predicted Label
-Fake News Probability
-Production Threshold
-```
-
-The production threshold is:
-
-```text
-0.36
-```
-
-No model retraining occurs during prediction.
+A ready-made template is available inside the **Batch** tab.
 
 ---
 
@@ -583,9 +268,8 @@ No model retraining occurs during prediction.
 
 ```text
 AI-Powered-Misinformation-Detection-System/
-│
-├── app.py
-├── evaluate_model.py
+├── app.py                          # Streamlit application (UI + inference)
+├── evaluate_model.py               # Evaluates the saved production package
 ├── requirements.txt
 ├── README.md
 ├── .gitignore
@@ -598,165 +282,68 @@ AI-Powered-Misinformation-Detection-System/
 │   └── Fake.csv
 │
 └── notebooks/
-    └── <TRAINING_NOTEBOOK_FILENAME>
+    └── <training notebook>
 ```
+
+---
+
+## 🛠️ Tech Stack
+
+| Technology | Purpose |
+|---|---|
+| **Python** | Core language |
+| **Pandas · NumPy** | Data handling and numerics |
+| **scikit-learn** | `TfidfVectorizer`, `CalibratedClassifierCV` |
+| **Joblib** | Model serialization and packaging |
+| **Streamlit** | Interactive web application |
+| **Jupyter / Google Colab** | Experimentation and training |
 
 ---
 
 ## ⚠️ Limitations
 
-### Dataset-Specific Patterns
-
-The model learns statistical patterns associated with the labels in its underlying dataset. These patterns may not fully represent the broader characteristics of real-world news.
-
-### Distribution Shift
-
-News topics, writing styles, publishers, and linguistic patterns can change over time.
-
-Consequently, performance on future or unseen distributions may differ from the diagnostic results reported in this repository.
-
-### Dataset Artifacts
-
-The classifier may learn dataset-specific artifacts, stylistic patterns, or correlations that are associated with the labels rather than the underlying concept of misinformation.
-
-### False Positives and False Negatives
-
-No binary classification model is guaranteed to classify every article correctly.
-
-Incorrect predictions can occur for both Real News and Fake News.
-
-### Limited Real-World Generalization
-
-Strong performance on the current diagnostic sample does not guarantee equivalent performance on:
-
-* Unseen news sources
-* Future articles
-* Different publishing environments
-* Different writing styles
-* Real-world misinformation campaigns
-
-### Classification vs. Fact Verification
-
-This system is a **classification model**, not a factual verification engine.
-
-It does not:
-
-* Browse the internet to verify claims
-* Fact-check individual statements
-* Determine objective truth
-* Validate sources independently
-* Replace professional fact-checking
-* Guarantee that an article is factually true or false
+| Area | Description |
+|---|---|
+| **Dataset-specific patterns** | The model learns statistical patterns tied to its training dataset, which may not reflect real-world news broadly. |
+| **Dataset artifacts** | It may pick up stylistic or source-specific cues correlated with labels rather than misinformation itself. |
+| **Distribution shift** | Topics, publishers and writing styles change over time; performance on future or unseen data may differ. |
+| **Errors** | False positives and false negatives are possible for both classes. |
+| **No fact verification** | The system does not browse the web, check claims, validate sources, or establish truth. |
+| **English only** | Trained and intended for English-language news. |
 
 ---
 
-## 🛡️ Responsible Use & Disclaimer
+## 🛡️ Responsible Use
 
-This project is intended primarily for:
+This project is intended for **education, ML/NLP research, experimentation and portfolio demonstration**.
 
-* Educational purposes
-* Machine Learning research
-* NLP experimentation
-* Portfolio demonstration
-
-Predictions should be treated as **model outputs**, not definitive statements about the factual accuracy of an article.
-
-The system identifies patterns associated with labels present in its training data. It does not establish objective truth.
-
-The application should therefore **not be used as a standalone source for factual verification or high-stakes decisions**.
+Predictions are **model outputs**, not statements about factual accuracy. Do **not** use this system as a standalone source for fact verification or high-stakes decisions. Always confirm important information with reliable, authoritative sources.
 
 ---
 
-## 🔮 Future Improvements
+## 🔮 Roadmap
 
-The following are potential future improvements and are **not currently presented as implemented functionality**:
+Ideas for future work — **not implemented today**:
 
-* Independent external validation
-* Temporal validation
-* Cross-source robustness analysis
-* Dataset leakage analysis
-* Dataset artifact analysis
-* Probability calibration analysis
-* Model explainability
-* Transformer-based model comparison
-* Prediction drift monitoring
-* Continuous evaluation
-* Real-world robustness testing
-* Additional model architectures
-* Production monitoring
-
----
-
-## 🛠️ Technologies
-
-| Technology                 | Purpose                               |
-| -------------------------- | ------------------------------------- |
-| **Python**                 | Core programming language             |
-| **Pandas**                 | Data manipulation and processing      |
-| **NumPy**                  | Numerical computing                   |
-| **Scikit-learn**           | Machine Learning                      |
-| **TfidfVectorizer**        | Text feature engineering              |
-| **CalibratedClassifierCV** | Probability-calibrated classification |
-| **Joblib**                 | Model serialization and packaging     |
-| **Streamlit**              | Interactive web application           |
-| **Jupyter / Google Colab** | Development and experimentation       |
+- [ ] Independent external and temporal validation
+- [ ] Cross-source robustness and dataset-artifact analysis
+- [ ] Probability calibration analysis
+- [ ] Model explainability (e.g. top contributing terms)
+- [ ] Transformer-based model comparison
+- [ ] Drift monitoring and continuous evaluation
 
 ---
 
 ## 👨‍💻 Author
 
-**Abdelrahman Akl**
+**Abdelrahman Akl** — Machine Learning / NLP
 
-Machine Learning / NLP Portfolio Project
-
----
-
-## 📌 Project Summary
-
-The **AI-Powered Misinformation Detection System** demonstrates an end-to-end NLP Machine Learning workflow, from dataset-based text classification to packaged production inference and Streamlit deployment.
-
-The core production pipeline is:
-
-```text
-News Title + Article Text
-            ↓
-          TF-IDF
-            ↓
-   CalibratedClassifierCV
-            ↓
-  Fake News Probability
-            ↓
-    Threshold = 0.36
-            ↓
-   Real News / Fake News
-```
-
-The production model, fitted vectorizer, threshold, feature policy, label mapping, and metadata are stored together inside a Joblib production package.
-
-This design allows the Streamlit application to perform **consistent, reproducible inference without retraining the model**.
-
-The project is intentionally positioned as a **misinformation classification system rather than a fact-checking or truth-verification system**.
+[![GitHub](https://img.shields.io/badge/GitHub-AbdelrhmanAkl-181717?style=flat-square&logo=github)](https://github.com/AbdelrhmanAkl)
 
 ---
 
-## ⭐ Final Note
+<div align="center">
 
-This project demonstrates how a traditional NLP pipeline can be transformed into a reusable production-oriented Machine Learning application by combining:
+If you found this project useful, consider giving it a ⭐
 
-```text
-Data
-  ↓
-NLP Feature Engineering
-  ↓
-Machine Learning
-  ↓
-Probability Calibration
-  ↓
-Production Packaging
-  ↓
-Frozen Inference
-  ↓
-Streamlit Deployment
-```
-
-The focus is not only on achieving a strong diagnostic score, but also on building a clear separation between **model development, production packaging, inference, evaluation, and deployment**.
+</div>
