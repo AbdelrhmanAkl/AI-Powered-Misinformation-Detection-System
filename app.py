@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import html as htmllib
+import json
 from pathlib import Path
 from typing import Any
 
@@ -14,7 +15,7 @@ import streamlit as st
 # ============================================================
 
 APP_NAME = "AI-Powered Misinformation Detection System"
-APP_VERSION = "2.0.0"
+APP_VERSION = "2.1.0"
 
 BASE_DIR = Path(__file__).resolve().parent
 
@@ -69,6 +70,15 @@ def render_html(markup: str) -> None:
     """Render HTML safely (strips indentation so Markdown never treats it as code)."""
     cleaned = "\n".join(line.strip() for line in markup.splitlines() if line.strip())
     st.markdown(cleaned, unsafe_allow_html=True)
+
+
+def render_json(data: Any) -> None:
+    """Dark-themed JSON viewer (replaces st.json, which renders white)."""
+    pretty = json.dumps(data, indent=2, ensure_ascii=False, default=str)
+    st.markdown(
+        f'<pre class="jsonbox">{htmllib.escape(pretty)}</pre>',
+        unsafe_allow_html=True,
+    )
 
 
 # ============================================================
@@ -305,11 +315,36 @@ p, li, span, label { color: inherit; }
 .kv-k { color: var(--muted); font-size:14px; font-weight:600; }
 .kv-v { color:#fff; font-size:14px; font-weight:700; text-align:right; word-break: break-word; }
 
-[data-testid="stExpander"] { border:1px solid var(--border) !important; border-radius:16px !important; background: var(--glass) !important; }
-[data-testid="stExpander"] summary p { color:#e2e8f0 !important; font-size:14.5px !important; font-weight:700 !important; }
+/* ---------- Expanders (dark fix) ---------- */
+[data-testid="stExpander"] {
+    border:1px solid var(--border) !important; border-radius:16px !important;
+    background: var(--glass) !important; overflow:hidden;
+}
+[data-testid="stExpander"] details,
+[data-testid="stExpander"] details > summary,
+[data-testid="stExpanderDetails"] {
+    background: transparent !important; color:#e2e8f0 !important;
+}
+[data-testid="stExpander"] summary:hover { background: rgba(255,255,255,.04) !important; }
+[data-testid="stExpander"] summary p,
+[data-testid="stExpander"] summary span { color:#e2e8f0 !important; font-size:14.5px !important; font-weight:700 !important; }
+[data-testid="stExpander"] summary svg { color:#cbd5e1 !important; fill:#cbd5e1 !important; }
+
+/* ---------- Custom JSON viewer ---------- */
+.jsonbox {
+    margin:0; padding:16px 18px; border-radius:14px;
+    background: rgba(5,9,20,.75) !important; border:1px solid var(--border);
+    color:#a5b4fc !important; font-family: ui-monospace, Consolas, 'Courier New', monospace;
+    font-size:13px; line-height:1.65; overflow-x:auto;
+    white-space: pre-wrap; word-break: break-word;
+}
+
+/* ---------- Dataframes / alerts ---------- */
 [data-testid="stDataFrame"] { border:1px solid var(--border); border-radius:14px; overflow:hidden; }
+[data-testid="stAlert"] { border-radius:14px; }
 [data-testid="stRadio"] label p { color:#e2e8f0 !important; font-size:14px !important; }
 [data-testid="stCaptionContainer"], .stCaption { color: var(--dim) !important; }
+pre, [data-testid="stCode"] { background: rgba(5,9,20,.75) !important; }
 
 .footer { margin-top:48px; padding-top:20px; border-top:1px solid var(--border); text-align:center; color: var(--dim); font-size:12.5px; line-height:1.8; }
 .footer b { color:#cbd5e1; }
@@ -679,11 +714,12 @@ def render_result(result: dict[str, Any]) -> None:
             "Excluded features": "subject",
             "Predicted label": label,
         }
-        st.dataframe(
-            pd.DataFrame([{"Parameter": k, "Value": str(v)} for k, v in details.items()]),
-            use_container_width=True,
-            hide_index=True,
+        rows = "".join(
+            f'<div class="kv"><div class="kv-k">{htmllib.escape(k)}</div>'
+            f'<div class="kv-v">{htmllib.escape(str(v))}</div></div>'
+            for k, v in details.items()
         )
+        render_html(rows)
 
 
 def render_disclaimer() -> None:
@@ -1011,15 +1047,16 @@ def render_model_overview(package: dict[str, Any]) -> None:
             )
         )
 
+    st.write("")
     config = package.get("config", {})
     if config:
         with st.expander("View saved configuration"):
-            st.json(config)
+            render_json(config)
 
     with st.expander("View package metadata"):
         metadata = package.get("metadata", {})
         if metadata:
-            st.json(metadata)
+            render_json(metadata)
         else:
             st.info("No additional metadata is exposed by the production package.")
 
