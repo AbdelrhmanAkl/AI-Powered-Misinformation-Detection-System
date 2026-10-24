@@ -15,7 +15,7 @@ import streamlit as st
 # ============================================================
 
 APP_NAME = "AI-Powered Misinformation Detection System"
-APP_VERSION = "2.1.0"
+APP_VERSION = "2.2.0"
 
 BASE_DIR = Path(__file__).resolve().parent
 
@@ -73,12 +73,19 @@ def render_html(markup: str) -> None:
 
 
 def render_json(data: Any) -> None:
-    """Dark-themed JSON viewer (replaces st.json, which renders white)."""
-    pretty = json.dumps(data, indent=2, ensure_ascii=False, default=str)
-    st.markdown(
-        f'<pre class="jsonbox">{htmllib.escape(pretty)}</pre>',
-        unsafe_allow_html=True,
-    )
+    """Dark-themed JSON viewer (replaces st.json)."""
+
+    def clean(obj: Any) -> Any:
+        if isinstance(obj, dict):
+            return {k: clean(v) for k, v in obj.items()}
+        if isinstance(obj, (list, tuple)):
+            return [clean(v) for v in obj]
+        if isinstance(obj, str):
+            return " ".join(obj.split())  # collapses stray newlines/spaces
+        return obj
+
+    pretty = json.dumps(clean(data), indent=2, ensure_ascii=False, default=str)
+    st.code(pretty, language="json")
 
 
 # ============================================================
@@ -330,21 +337,15 @@ p, li, span, label { color: inherit; }
 [data-testid="stExpander"] summary span { color:#e2e8f0 !important; font-size:14.5px !important; font-weight:700 !important; }
 [data-testid="stExpander"] summary svg { color:#cbd5e1 !important; fill:#cbd5e1 !important; }
 
-/* ---------- Custom JSON viewer ---------- */
-.jsonbox {
-    margin:0; padding:16px 18px; border-radius:14px;
-    background: rgba(5,9,20,.75) !important; border:1px solid var(--border);
-    color:#a5b4fc !important; font-family: ui-monospace, Consolas, 'Courier New', monospace;
-    font-size:13px; line-height:1.65; overflow-x:auto;
-    white-space: pre-wrap; word-break: break-word;
-}
-
 /* ---------- Dataframes / alerts ---------- */
 [data-testid="stDataFrame"] { border:1px solid var(--border); border-radius:14px; overflow:hidden; }
 [data-testid="stAlert"] { border-radius:14px; }
 [data-testid="stRadio"] label p { color:#e2e8f0 !important; font-size:14px !important; }
 [data-testid="stCaptionContainer"], .stCaption { color: var(--dim) !important; }
-pre, [data-testid="stCode"] { background: rgba(5,9,20,.75) !important; }
+[data-testid="stCode"], [data-testid="stCode"] pre {
+    background: rgba(5,9,20,.75) !important; border:1px solid var(--border); border-radius:14px !important;
+}
+[data-testid="stCode"] code { font-size:13px !important; line-height:1.65 !important; white-space: pre-wrap !important; word-break: break-word; }
 
 .footer { margin-top:48px; padding-top:20px; border-top:1px solid var(--border); text-align:center; color: var(--dim); font-size:12.5px; line-height:1.8; }
 .footer b { color:#cbd5e1; }
