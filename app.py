@@ -269,14 +269,6 @@ p, li, span, label { color: inherit; }
 .v-real { color: var(--green); } .v-fake { color: var(--red); }
 .v-copy { color:#b6c2d6; font-size:14px; line-height:1.6; margin-top:6px; max-width: 380px; }
 
-.meter { margin-top: 22px; }
-.meter-head { display:flex; justify-content:space-between; color:#cbd5e1; font-size:13px; font-weight:700; margin-bottom:9px; }
-.meter-track { position:relative; height:12px; border-radius:999px; background: rgba(148,163,184,.18); }
-.meter-fill { height:100%; border-radius:999px; background: linear-gradient(90deg, #34d399, #fbbf24 55%, #fb7185); }
-.meter-mask { position:absolute; top:0; right:0; height:100%; border-radius: 0 999px 999px 0; background: rgba(10,16,32,.88); }
-.meter-thr { position:absolute; top:-6px; width:3px; height:24px; border-radius:3px; background:#fff; box-shadow:0 0 10px rgba(255,255,255,.6); }
-.meter-legend { display:flex; justify-content:space-between; margin-top:9px; color: var(--dim); font-size:12px; font-weight:600; }
-
 .stat-grid { display:grid; grid-template-columns: repeat(3, 1fr); gap:10px; margin-top: 16px; }
 .stat { padding:14px 16px; border-radius:15px; background: var(--glass); border:1px solid var(--border); }
 .stat-l { color: var(--dim); font-size:11.5px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
@@ -668,10 +660,6 @@ def render_result(result: dict[str, Any]) -> None:
         "associates with misleading or fabricated news."
     )
 
-    fake_pct = max(0.0, min(100.0, fake_p * 100))
-    thr_pct = max(0.0, min(100.0, thr * 100))
-    rule = "≥" if fake_p >= thr else "<"
-
     render_html(
         f"""
         <div class="verdict {cls}">
@@ -684,18 +672,6 @@ def render_result(result: dict[str, Any]) -> None:
                     <div class="v-title {txt_cls}">{icon} {verdict}</div>
                     <div class="v-copy">{copy}</div>
                 </div>
-            </div>
-            <div class="meter">
-                <div class="meter-head">
-                    <span>Fake-news score</span>
-                    <span>{fake_p:.1%} {rule} threshold {thr:.1%}</span>
-                </div>
-                <div class="meter-track">
-                    <div class="meter-fill" style="width:100%"></div>
-                    <div class="meter-mask" style="width:{100 - fake_pct:.1f}%"></div>
-                    <div class="meter-thr" style="left:calc({thr_pct:.1f}% - 1px)"></div>
-                </div>
-                <div class="meter-legend"><span>0% · Real</span><span>▏ decision threshold</span><span>Fake · 100%</span></div>
             </div>
         </div>
         <div class="stat-grid">
